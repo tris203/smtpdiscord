@@ -22,7 +22,7 @@ This project is a small, pragmatic tool to pipe inbound email into Discord chann
 
 - **SMTP:** `:25`
 - **Web UI:** `:8080`
-- **DB file:** `config.db` (created in the working directory)
+- **DB file:** `config.db` (created in the working directory, configurable via DB_PATH env var)
 
 Getting started
 
@@ -42,6 +42,7 @@ docker run -p 25:25 -p 8080:8080 smtpdiscord
 
 Configuration
 
+- Create a `.env` file based on `.env.example` to set the database path (optional, defaults to `config.db`).
 - Open the web UI at `http://localhost:8080` and add domain/webhook pairs.
 - Each incoming recipient address is split on `@`; the domain part is used to look up the webhook.
 - Example: an email to `alerts@example.com` will use the webhook configured for the `example.com` domain.

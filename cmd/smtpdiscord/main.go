@@ -3,8 +3,10 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
 	"sync"
 
+	"github.com/joho/godotenv"
 	"github.com/mhale/smtpd"
 	"github.com/tris203/smtpdiscord/internal/db"
 	"github.com/tris203/smtpdiscord/internal/smtp"
@@ -12,7 +14,19 @@ import (
 )
 
 func main() {
-	database, err := db.InitDB("config.db")
+	// Load .env file
+	err := godotenv.Load()
+	if err != nil {
+		log.Println("No .env file found, using default values")
+	}
+
+	// Get DB path from env, default to "config.db"
+	dbPath := os.Getenv("DB_PATH")
+	if dbPath == "" {
+		dbPath = "config.db"
+	}
+
+	database, err := db.InitDB(dbPath)
 	if err != nil {
 		log.Fatal("Error initializing database:", err)
 	}

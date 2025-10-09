@@ -3,21 +3,17 @@ package smtp
 import (
 	"bytes"
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"log"
 	"net"
-	"net/http"
 	"net/mail"
 	"strings"
-)
 
-type WebhookContent struct {
-	Content  string `json:"content"`
-	Username string `json:"username"`
-}
+	"github.com/mhale/smtpd"
+	"github.com/tris203/smtpdiscord/internal/discord"
+)
 
 func MailHandler(db *sql.DB) func(net.Addr, string, []string, []byte) error {
 	return func(remoteAddr net.Addr, from string, to []string, data []byte) error {
@@ -38,15 +34,9 @@ func MailHandler(db *sql.DB) func(net.Addr, string, []string, []byte) error {
 
 		// Prepare payload
 		content := fmt.Sprintf("**Subject:** %s\n\n%s", subject, string(body))
-		payload := WebhookContent{
+		payload := discord.WebhookContent{
 			Content:  content,
 			Username: from,
-		}
-
-		jsonData, err := json.Marshal(payload)
-		if err != nil {
-			log.Printf("Error marshaling JSON: %v", err)
-			return err
 		}
 
 		// Send to webhooks for each recipient domain
@@ -66,16 +56,9 @@ func MailHandler(db *sql.DB) func(net.Addr, string, []string, []byte) error {
 					}
 				}
 
-				resp, err := http.Post(webhook, "application/json", bytes.NewBuffer(jsonData))
+				err = discord.SendToWebhook(webhook, payload)
 				if err != nil {
-					log.Printf("Error sending to Discord webhook %s: %v", webhook, err)
 					return err
-				}
-				defer resp.Body.Close()
-
-				if resp.StatusCode != 204 && resp.StatusCode != 200 {
-					log.Printf("Discord webhook %s returned status %d", webhook, resp.StatusCode)
-					return errors.New("discord webhook returned non-success status")
 				}
 				log.Printf("Forwarded email from %s to Discord webhook for domain", from)
 			} else {
@@ -86,4 +69,9 @@ func MailHandler(db *sql.DB) func(net.Addr, string, []string, []byte) error {
 
 		return nil
 	}
+}
+
+func Start(db *sql.DB) error {
+	log.Println("Starting SMTP server on :25")
+	return smtpd.ListenAndServe(":25", MailHandler(db), "smtpdiscord", "")
 }
