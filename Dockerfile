@@ -12,8 +12,11 @@ RUN go mod download
 # Copy source code
 COPY . .
 
-# Build the application
-RUN go build -o main ./cmd/smtpdiscord
+# Install build dependencies for CGO
+RUN apk --no-cache add gcc musl-dev
+
+# Build the application with CGO enabled
+RUN CGO_ENABLED=1 go build -o main ./cmd/smtpdiscord
 
 # Runtime stage
 FROM alpine:latest
