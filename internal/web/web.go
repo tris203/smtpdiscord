@@ -41,19 +41,26 @@ func (s *Server) indexHandler(w http.ResponseWriter, r *http.Request) {
 <html>
 <head>
     <title>SMTP Discord Config</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
 </head>
-<body>
-    <h1>Domain Configurations</h1>
-    <div hx-get="/domains" hx-trigger="load, every 5s" hx-target="this" hx-swap="innerHTML">
-        Loading...
+<body class="bg-gray-900 min-h-screen p-8">
+    <div class="max-w-4xl mx-auto bg-gray-800 rounded-lg shadow-lg p-6 border border-gray-700">
+        <h1 class="text-3xl font-bold text-white mb-6">Domain Configurations</h1>
+        <div hx-get="/domains" hx-trigger="load, every 5s" hx-target="this" hx-swap="innerHTML" class="mb-6">
+            <div class="text-gray-400">Loading...</div>
+        </div>
+        <h2 class="text-2xl font-semibold text-gray-200 mb-4">Add Domain</h2>
+        <form hx-post="/domains" hx-target="#domains-list" hx-swap="beforeend" class="space-y-4">
+            <div>
+                <input type="text" name="domain" placeholder="Domain" required class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400">
+            </div>
+            <div>
+                <input type="url" name="webhook" placeholder="Webhook URL" required class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400">
+            </div>
+            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition duration-200">Add</button>
+        </form>
     </div>
-    <h2>Add Domain</h2>
-    <form hx-post="/domains" hx-target="#domains-list" hx-swap="beforeend">
-        <input type="text" name="domain" placeholder="Domain" required>
-        <input type="url" name="webhook" placeholder="Webhook URL" required>
-        <button type="submit">Add</button>
-    </form>
 </body>
 </html>
 `
@@ -87,11 +94,13 @@ func (s *Server) listDomainsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tmpl := `
-<div id="domains-list">
+<div id="domains-list" class="space-y-4">
 {{range .}}
-    <div>
-        <strong>{{.Domain}}</strong>: {{.Webhook}}
-        <button hx-delete="/domains?domain={{.Domain}}" hx-target="closest div" hx-swap="outerHTML">Delete</button>
+    <div class="bg-gray-700 border border-gray-600 rounded-md p-4">
+        <div class="mb-2">
+            <strong class="text-white">{{.Domain}}</strong>: <span class="text-gray-300 break-words">{{.Webhook}}</span>
+        </div>
+        <button hx-delete="/domains?domain={{.Domain}}" hx-target="closest div" hx-swap="outerHTML" class="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-3 rounded-md transition duration-200">Delete</button>
     </div>
 {{end}}
 </div>
@@ -117,9 +126,11 @@ func (s *Server) addDomainHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Return the new domain entry
 	tmpl := `
-<div>
-    <strong>{{.Domain}}</strong>: {{.Webhook}}
-    <button hx-delete="/domains?domain={{.Domain}}" hx-target="closest div" hx-swap="outerHTML">Delete</button>
+<div class="bg-gray-700 border border-gray-600 rounded-md p-4">
+    <div class="mb-2">
+        <strong class="text-white">{{.Domain}}</strong>: <span class="text-gray-300 break-words">{{.Webhook}}</span>
+    </div>
+    <button hx-delete="/domains?domain={{.Domain}}" hx-target="closest div" hx-swap="outerHTML" class="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-3 rounded-md transition duration-200">Delete</button>
 </div>
 `
 	t := template.Must(template.New("item").Parse(tmpl))

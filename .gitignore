@@ -1,2 +1,5 @@
 .env
 config.db
+main
+smtpdiscord
+test.sh
