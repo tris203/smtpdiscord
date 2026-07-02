@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"database/sql"
 	"errors"
-	"fmt"
 	"io"
 	"log"
 	"net"
@@ -13,6 +12,12 @@ import (
 
 	"github.com/mhale/smtpd"
 	"github.com/tris203/smtpdiscord/internal/discord"
+)
+
+const (
+	discordEmbedTitleLimit       = 256
+	discordEmbedDescriptionLimit = 4096
+	discordEmbedFieldValueLimit  = 1024
 )
 
 func MailHandler(db *sql.DB) func(net.Addr, string, []string, []byte) error {
@@ -32,11 +37,33 @@ func MailHandler(db *sql.DB) func(net.Addr, string, []string, []byte) error {
 			return err
 		}
 
-		// Prepare payload
-		content := fmt.Sprintf("**Subject:** %s\n\n%s", subject, string(body))
+		bodyText := strings.TrimSpace(string(body))
+		if bodyText == "" {
+			bodyText = "(empty email body)"
+		}
+
+		if strings.TrimSpace(subject) == "" {
+			subject = "(no subject)"
+		}
+		subject = truncate(subject, discordEmbedTitleLimit)
+		description := truncate(bodyText, discordEmbedDescriptionLimit)
+		toField := truncate(strings.Join(to, "\n"), discordEmbedFieldValueLimit)
+		fromField := truncate(from, discordEmbedFieldValueLimit)
+
 		payload := discord.WebhookContent{
-			Content:  content,
 			Username: from,
+			Embeds: []discord.WebhookEmbed{
+				{
+					Title:       subject,
+					Description: description,
+					Color:       0x5865F2,
+					Fields: []discord.WebhookEmbedField{
+						{Name: "From", Value: fromField, Inline: true},
+						{Name: "To", Value: toField, Inline: true},
+					},
+					Footer: &discord.WebhookEmbedFooter{Text: "smtpdiscord"},
+				},
+			},
 		}
 
 		// Send to webhooks for each recipient domain
@@ -71,7 +98,26 @@ func MailHandler(db *sql.DB) func(net.Addr, string, []string, []byte) error {
 	}
 }
 
-func Start(db *sql.DB) error {
-	log.Println("Starting SMTP server on :25")
-	return smtpd.ListenAndServe(":25", MailHandler(db), "smtpdiscord", "")
+func truncate(value string, limit int) string {
+	const suffix = "... truncated"
+
+	if limit <= 0 {
+		return ""
+	}
+
+	if limit <= len(suffix) {
+		return suffix[:limit]
+	}
+
+	runes := []rune(value)
+	if len(runes) <= limit {
+		return value
+	}
+
+	return string(runes[:limit-len(suffix)-1]) + " " + suffix
+}
+
+func Start(db *sql.DB, addr string) error {
+	log.Printf("Starting SMTP server on %s", addr)
+	return smtpd.ListenAndServe(addr, MailHandler(db), "smtpdiscord", "")
 }

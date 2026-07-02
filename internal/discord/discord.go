@@ -9,8 +9,27 @@ import (
 )
 
 type WebhookContent struct {
-	Content  string `json:"content"`
-	Username string `json:"username"`
+	Content  string         `json:"content,omitempty"`
+	Username string         `json:"username,omitempty"`
+	Embeds   []WebhookEmbed `json:"embeds,omitempty"`
+}
+
+type WebhookEmbed struct {
+	Title       string              `json:"title,omitempty"`
+	Description string              `json:"description,omitempty"`
+	Color       int                 `json:"color,omitempty"`
+	Fields      []WebhookEmbedField `json:"fields,omitempty"`
+	Footer      *WebhookEmbedFooter `json:"footer,omitempty"`
+}
+
+type WebhookEmbedField struct {
+	Name   string `json:"name"`
+	Value  string `json:"value"`
+	Inline bool   `json:"inline,omitempty"`
+}
+
+type WebhookEmbedFooter struct {
+	Text string `json:"text"`
 }
 
 func SendToWebhook(webhookURL string, payload WebhookContent) error {

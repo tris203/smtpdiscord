@@ -7,7 +7,6 @@ import (
 	"sync"
 
 	"github.com/joho/godotenv"
-	"github.com/mhale/smtpd"
 	"github.com/tris203/smtpdiscord/internal/db"
 	"github.com/tris203/smtpdiscord/internal/smtp"
 	"github.com/tris203/smtpdiscord/internal/web"
@@ -25,6 +24,10 @@ func main() {
 	if dbPath == "" {
 		dbPath = "config.db"
 	}
+	smtpAddr := os.Getenv("SMTP_ADDR")
+	if smtpAddr == "" {
+		smtpAddr = ":25"
+	}
 
 	database, err := db.InitDB(dbPath)
 	if err != nil {
@@ -38,8 +41,7 @@ func main() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		log.Println("Starting SMTP server on :25")
-		err := smtpd.ListenAndServe(":25", smtp.MailHandler(database), "smtpdiscord", "")
+		err := smtp.Start(database, smtpAddr)
 		if err != nil {
 			log.Fatal(err)
 		}
